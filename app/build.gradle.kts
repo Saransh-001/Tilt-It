@@ -63,4 +63,5 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.hilt.navigation.compose)
     kapt(libs.hilt.android.compiler)
+    implementation(libs.datastore.preferences)
 }

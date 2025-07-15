@@ -1,11 +1,11 @@
-package com.example.tiltit
+package com.example.tiltit.presentation
 
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import com.example.tiltit.viewmodel.ViewModel
+import com.example.tiltit.presentation.viewmodel.ViewModel
 
 @Composable
 fun FallingObstacle(

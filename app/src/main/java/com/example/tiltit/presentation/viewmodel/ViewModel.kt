@@ -1,31 +1,38 @@
-package com.example.tiltit.viewmodel
+package com.example.tiltit.presentation.viewmodel
 
-import android.R.attr.radius
-import android.R.attr.x
-import android.R.attr.y
+import android.app.Application
+import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
-import com.example.tiltit.Obstacle
+import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.tiltit.DataStoreManager
+import com.example.tiltit.presentation.Obstacle
 import com.example.tiltit.accelerometer.baseclass.MeasurableSensor
+import dagger.hilt.android.internal.Contexts.getApplication
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import java.nio.file.Files.size
 
 @HiltViewModel
 class ViewModel @Inject constructor(
-    private val accelerometerSensor: MeasurableSensor
-): ViewModel() {
-
-    var isRunning by mutableStateOf(false)
+    private val accelerometerSensor: MeasurableSensor,
+    application: Application
+): AndroidViewModel(application) {
 
     var x by mutableFloatStateOf(0f)
     var y by mutableFloatStateOf(0f)
-    var showMenu by mutableStateOf(true)
 
     val ballRadius = 125f
     var screenSize by mutableStateOf(Size.Zero)
@@ -35,6 +42,45 @@ class ViewModel @Inject constructor(
         private set
 
     private var obstacleSpawnTimer = 0L
+
+    var gameState by mutableStateOf<GameState>(GameState.MainMenu)
+
+    var score by mutableIntStateOf(0)
+        private set
+
+    private var scoreJob: Job? = null
+
+    var highScore: Int = 0
+
+    init {
+        viewModelScope.launch {
+            highScore = DataStoreManager.getHighScore(application)
+        }
+    }
+
+    fun startScoring() {
+        scoreJob?.cancel()
+        scoreJob = viewModelScope.launch {
+            while (isActive && gameState == GameState.Running) {
+                score++
+                println("Score: ${score}")
+                delay(1000L)
+            }
+        }
+    }
+
+    fun stopScoring() {
+        scoreJob?.cancel()
+    }
+
+    fun updateHighScoreIfNeeded() {
+        if (score > highScore) {
+            highScore = score
+            viewModelScope.launch {
+                DataStoreManager.saveHighScore(getApplication(), highScore)
+            }
+        }
+    }
 
     fun updateBallPosition() {
         val dx = -x * 5
@@ -61,8 +107,8 @@ class ViewModel @Inject constructor(
         fallingObstacle = updatedObst
         fallingObstacle.forEach { obs ->
             if (isCollision(ballPosition, obs)) {
-                isRunning = false
-                showMenu = true
+                gameState = GameState.GameOver
+                stopListening()
             }
         }
 
@@ -73,9 +119,9 @@ class ViewModel @Inject constructor(
         }
     }
 
-    private fun isCollision(ball: Offset, obstacle: Obstacle): Boolean {
-        val bx = ball.x + ballRadius
-        val by = ball.y + ballRadius
+    private fun isCollision(ballPosition: Offset, obstacle: Obstacle): Boolean {
+        val bx = ballPosition.x + ballRadius
+        val by = ballPosition.y + ballRadius
 
         val rectLeft = obstacle.position.x
         val rectRight = rectLeft + obstacle.size.width
@@ -98,12 +144,38 @@ class ViewModel @Inject constructor(
             x = values[0]
             y = values[1]
         }
-        isRunning = true
+        gameState = GameState.Running
+        startScoring()
     }
 
     fun stopListening() {
         accelerometerSensor.stopListening()
-        isRunning = false
+        updateHighScoreIfNeeded()
+        stopScoring()
     }
+
+    fun resetGame() {
+        ballPosition = Offset(
+            (screenSize.width - ballRadius * 2) / 2f,
+            screenSize.height * 3 / 4f
+        )
+
+        fallingObstacle = listOf()
+        score = 0
+    }
+
+}
+
+sealed interface GameState {
+
+    data object MainMenu: GameState
+
+    data object PauseMenu: GameState
+
+    data object Running: GameState
+
+    data object GameOver: GameState
+
+    data object HighScore: GameState
 
 }

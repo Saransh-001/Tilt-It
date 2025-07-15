@@ -1,4 +1,4 @@
-package com.example.tiltit
+package com.example.tiltit.presentation
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size

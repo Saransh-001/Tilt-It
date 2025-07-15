@@ -5,8 +5,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.tiltit.presentation.MainScreen
 import com.example.tiltit.ui.theme.TiltItTheme
-import com.example.tiltit.viewmodel.ViewModel
+import com.example.tiltit.presentation.viewmodel.ViewModel
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
