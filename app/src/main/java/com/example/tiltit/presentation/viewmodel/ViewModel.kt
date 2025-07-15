@@ -41,14 +41,16 @@ class ViewModel @Inject constructor(
     var fallingObstacle by mutableStateOf(listOf<Obstacle>())
         private set
 
-    private var obstacleSpawnTimer = 0L
-
     var gameState by mutableStateOf<GameState>(GameState.MainMenu)
 
     var score by mutableIntStateOf(0)
         private set
 
     private var scoreJob: Job? = null
+    private var obstacleJob: Job? = null
+    private var speedJob: Job? = null
+
+    private var spawnSpeed: Long = 800L
 
     var highScore: Int = 0
 
@@ -63,7 +65,6 @@ class ViewModel @Inject constructor(
         scoreJob = viewModelScope.launch {
             while (isActive && gameState == GameState.Running) {
                 score++
-                println("Score: ${score}")
                 delay(1000L)
             }
         }
@@ -111,12 +112,36 @@ class ViewModel @Inject constructor(
                 stopListening()
             }
         }
+    }
 
-        val currTime = System.currentTimeMillis()
-        if (currTime - obstacleSpawnTimer > 800) {
-            spawnObstacle()
-            obstacleSpawnTimer = currTime
+    private fun startObstacleSpawning() {
+        obstacleJob?.cancel()
+        obstacleJob = viewModelScope.launch {
+            while (isActive && gameState == GameState.Running) {
+                delay(spawnSpeed)
+                spawnObstacle()
+            }
         }
+    }
+
+    private fun stopObstacleSpawning() {
+        obstacleJob?.cancel()
+    }
+
+    private fun increaseSpawnSpeed() {
+        speedJob?.cancel()
+        speedJob = viewModelScope.launch {
+            while (isActive && gameState == GameState.Running) {
+                delay(10_000L)
+
+                if (spawnSpeed > 500L) {
+                    spawnSpeed -= 100L
+                }
+            }
+        }
+    }
+    private fun stopIncreaseSpawnSpeed() {
+        speedJob?.cancel()
     }
 
     private fun isCollision(ballPosition: Offset, obstacle: Obstacle): Boolean {
@@ -145,13 +170,17 @@ class ViewModel @Inject constructor(
             y = values[1]
         }
         gameState = GameState.Running
+        startObstacleSpawning()
         startScoring()
+        increaseSpawnSpeed()
     }
 
     fun stopListening() {
         accelerometerSensor.stopListening()
         updateHighScoreIfNeeded()
+        stopObstacleSpawning()
         stopScoring()
+        stopIncreaseSpawnSpeed()
     }
 
     fun resetGame() {
