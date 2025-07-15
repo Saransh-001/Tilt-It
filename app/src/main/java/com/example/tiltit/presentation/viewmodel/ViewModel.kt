@@ -191,6 +191,7 @@ class ViewModel @Inject constructor(
 
         fallingObstacle = listOf()
         score = 0
+        spawnSpeed = 800L
     }
 
 }
