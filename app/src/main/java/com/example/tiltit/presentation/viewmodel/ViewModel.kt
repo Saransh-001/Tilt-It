@@ -14,6 +14,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tiltit.DataStoreManager
+import com.example.tiltit.SoundManager
 import com.example.tiltit.presentation.Obstacle
 import com.example.tiltit.accelerometer.baseclass.MeasurableSensor
 import dagger.hilt.android.internal.Contexts.getApplication
@@ -54,10 +55,13 @@ class ViewModel @Inject constructor(
 
     var highScore: Int = 0
 
+    val soundManager = SoundManager(application)
+
     init {
         viewModelScope.launch {
             highScore = DataStoreManager.getHighScore(application)
         }
+        soundManager.playBackgroundMusic()
     }
 
     fun startScoring() {
@@ -108,8 +112,11 @@ class ViewModel @Inject constructor(
         fallingObstacle = updatedObst
         fallingObstacle.forEach { obs ->
             if (isCollision(ballPosition, obs)) {
+                soundManager.playCollisionSound()
                 gameState = GameState.GameOver
                 stopListening()
+                soundManager.stopBackgroundMusic()
+                soundManager.playGameOverMusic()
             }
         }
     }
@@ -132,9 +139,9 @@ class ViewModel @Inject constructor(
         speedJob?.cancel()
         speedJob = viewModelScope.launch {
             while (isActive && gameState == GameState.Running) {
-                delay(10_000L)
+                delay(8000L)
 
-                if (spawnSpeed > 500L) {
+                if (spawnSpeed > 300L) {
                     spawnSpeed -= 100L
                 }
             }
@@ -188,10 +195,14 @@ class ViewModel @Inject constructor(
             (screenSize.width - ballRadius * 2) / 2f,
             screenSize.height * 3 / 4f
         )
-
         fallingObstacle = listOf()
         score = 0
         spawnSpeed = 800L
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundManager.releaseAll()
     }
 
 }

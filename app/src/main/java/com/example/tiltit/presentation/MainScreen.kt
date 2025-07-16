@@ -62,6 +62,8 @@ fun MainScreen(
                 MainMenu(
                     onStartClick = {
                         viewModel.startListening()
+                        viewModel.soundManager.stopGameOverMusic()
+                        viewModel.soundManager.playBackgroundMusic()
                         viewModel.resetGame()
                         viewModel.gameState = GameState.Running
                     },
@@ -75,15 +77,18 @@ fun MainScreen(
                 PauseMenuDialog(
                     onResumeClick = {
                         viewModel.startListening()
+                        viewModel.soundManager.playBackgroundMusic()
                         viewModel.gameState = GameState.Running
                     },
                     onQuitClick = {
                         viewModel.gameState = GameState.MainMenu
+                        viewModel.soundManager.playBackgroundMusic()
                     },
                     onRestartClick = {
                         viewModel.gameState = GameState.Running
-                        viewModel.startListening()
+                        viewModel.soundManager.playBackgroundMusic()
                         viewModel.resetGame()
+                        viewModel.startListening()
                     }
                 )
             }
@@ -92,6 +97,7 @@ fun MainScreen(
                 PauseButton(
                     onClick = {
                         viewModel.gameState = GameState.PauseMenu
+                        viewModel.soundManager.pauseBackgroundMusic()
                         viewModel.stopListening()
                     },
                     modifier = Modifier
@@ -116,9 +122,13 @@ fun MainScreen(
                 GameOverMenuDialog(
                     onMainMenuClick = {
                         viewModel.gameState = GameState.MainMenu
+                        viewModel.soundManager.stopGameOverMusic()
+                        viewModel.soundManager.playBackgroundMusic()
                     },
                     onRetryClick = {
                         viewModel.gameState = GameState.Running
+                        viewModel.soundManager.stopGameOverMusic()
+                        viewModel.soundManager.playBackgroundMusic()
                         viewModel.startListening()
                         viewModel.resetGame()
                     },
